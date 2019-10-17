@@ -7,23 +7,24 @@
 #  Copyright (c) 2017-2019 Jean Prunneaux
 #
 
-# Index of functions
+# Index
 #
-# Global functions
-#   print_error
-#   internal_error
-#   log_entry
-#   log_error
-#   log_debug
-# Security functions
-#   srv_save_token
-#   srv_check_password
-#   srv_check_token
-#   srv_clean_tokens
-#   srv_check_rsync_options
-# Backup steps
-#   srv_clean_exit
-#   srv_cancel_exit
+#   Global functions
+#     print_error
+#     internal_error
+#     usage_error
+#     log_entry
+#     log_error
+#     log_debug
+#   Security functions
+#     srv_save_token
+#     srv_check_password
+#     srv_check_token
+#     srv_clean_tokens
+#     srv_check_rsync_options
+#   Backup steps
+#     srv_clean_exit
+#     srv_cancel_exit
 
 
 #

@@ -7,14 +7,15 @@
 #  Copyright (c) 2017-2019 Jean Prunneaux
 #
 
-# Index of functions
+# Index
 #
-#   t2bs_prepare
-#   t2bs_backup
-#   t2bs_restore
-#   t2bs_history
-#   t2bs_rotate
-#   t2bs_rsync
+#   Commands
+#     t2bs_prepare
+#     t2bs_backup
+#     t2bs_restore
+#     t2bs_history
+#     t2bs_rotate
+#     t2bs_rsync
 
 
 # Initialize connection and prepare for backup process

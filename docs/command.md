@@ -6,6 +6,7 @@
 * [backup](#backup)
 * [restore](#restore)
 * [history](#history)
+* [rotate](#rotate)
 * [rsync](#rsync)
 
 ---------------------------------------------------------------
@@ -49,7 +50,7 @@ time2backup-server [GLOBAL_OPTIONS] prepare COMMAND [ARGS...]
 ## backup
 Perform a backup.
 
-Note: this command is called by time2backup script. You cannot call it manually.
+Note: this command is called after prepare negociation. You cannot call it manually.
 
 ### Usage
 ```bash
@@ -65,7 +66,7 @@ time2backup-server -t TOKEN backup [OPTIONS]
 ## restore
 Restore a file or directory.
 
-Note: this command is called by time2backup script. You cannot call it manually.
+Note: this command is called after prepare negociation. You cannot call it manually.
 
 ### Usage
 ```bash
@@ -99,9 +100,35 @@ time2backup-server [GLOBAL_OPTIONS] history [OPTIONS] PATH
 - 5: No backup found for the path
 
 ---------------------------------------------------------------
+<a name="rotate"></a>
+## rotate
+Perform an rotate command.
+
+### Usage
+```bash
+time2backup-server [GLOBAL_OPTIONS] rotate [LIMIT]
+```
+
+### Options
+```
+LIMIT        Set number of maximum backups to keep
+```
+
+### Exit codes
+- 0: rsync OK
+- 201: Usage error
+- 202: Internal server error
+- 203: Config error
+- 204: Bad password
+- 205: rsync command not ok
+- 206: destination not permitted/available
+- other: see rsync exit codes
+
+---------------------------------------------------------------
 <a name="rsync"></a>
 ## rsync
-Perform an rsync command.
+Perform an rsync server command.
+Should be used when calling rsync by ssh from a client. Not locally.
 
 ### Usage
 ```bash
