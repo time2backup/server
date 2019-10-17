@@ -14,21 +14,13 @@
 
 ### Usage
 ```bash
-time2backup-server [GLOBAL_OPTIONS] COMMAND [OPTIONS] [ARG...]
+time2backup-server [GLOBAL_OPTIONS] COMMAND [ARGS...]
 ```
 
 ### Global options
 ```
 -p PASSWORD  Server password
 -t TOKEN     Server token
-```
-
-### Commands
-```
-prepare  Prepare server negociation
-backup   Backup your files
-restore  Restore a backup of a file/directory
-rsync    Execute a rsync command
 ```
 
 ---------------------------------------------------------------
@@ -38,12 +30,7 @@ Prepare server negociation.
 
 ### Usage
 ```bash
-time2backup-server [GLOBAL_OPTIONS] prepare [OPTIONS] [PATH...]
-```
-
-### Options
-```
-
+time2backup-server [GLOBAL_OPTIONS] prepare COMMAND [ARGS...]
 ```
 
 ### Exit codes
@@ -62,14 +49,11 @@ time2backup-server [GLOBAL_OPTIONS] prepare [OPTIONS] [PATH...]
 ## backup
 Perform a backup.
 
+Note: this command is called by time2backup script. You cannot call it manually.
+
 ### Usage
 ```bash
-time2backup-server -t TOKEN backup [OPTIONS] [PATH...]
-```
-
-### Options
-```
-
+time2backup-server -t TOKEN backup [OPTIONS]
 ```
 
 ### Exit codes
@@ -79,19 +63,13 @@ time2backup-server -t TOKEN backup [OPTIONS] [PATH...]
 ---------------------------------------------------------------
 <a name="restore"></a>
 ## restore
-Restore a file or directory
+Restore a file or directory.
 
-Be careful when restoring a deleted/moved directory, don't forget to put a "/" at the end of the path
-if you are specify path via the command line.
+Note: this command is called by time2backup script. You cannot call it manually.
 
 ### Usage
 ```bash
 time2backup-server -t TOKEN restore [OPTIONS]
-```
-
-### Options
-```
-
 ```
 
 ### Exit codes
@@ -127,17 +105,13 @@ Perform an rsync command.
 
 ### Usage
 ```bash
-time2backup-server [GLOBAL_OPTIONS] rsync RSYNC_ARGS
-```
-
-### Options
-```
+time2backup-server [GLOBAL_OPTIONS] rsync RSYNC_ARGS [RSYNC_ARGS...]
 ```
 
 ### Exit codes
 - 0: rsync OK
 - 201: Usage error
-- 202: Load error
+- 202: Internal server error
 - 203: Config error
 - 204: Bad password
 - 205: rsync command not ok
