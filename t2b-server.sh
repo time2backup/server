@@ -42,9 +42,11 @@ fi
 
 # force libbash GUI to console mode
 lbg_set_gui console
+notifications=false
 
 # disable debug messages
-lb_set_log_level ERROR
+lb_set_log_level INFO
+lb_set_display_level INFO
 
 # change current script name
 lb_current_script_name=time2backup-server

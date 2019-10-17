@@ -16,6 +16,7 @@
 #     log_entry
 #     log_error
 #     log_debug
+#     debug
 #   Security functions
 #     srv_save_token
 #     srv_check_password
@@ -77,8 +78,15 @@ log_error() {
 # Log debug in server log
 # Usage: log_debug TEXT
 log_debug() {
-	lb_istrue $debug || return 0
+	lb_istrue $debug_mode || return 0
 	log_entry -l DEBUG -p "$@"
+}
+
+
+# Debug function to overwrite time2backup functions output behaviour
+# Usage: debug TEXT
+debug() {
+	log_debug "$@"
 }
 
 
