@@ -1,6 +1,10 @@
 # Changelog
 
-## 1.0.0 BETA 1 (2019-10-17)
+## 1.0.0 beta 2 (2019-10-18)
+- Trash mode support
+- Improve logs and display
+
+## 1.0.0 beta 1 (2019-10-17)
 - First release
 
 ---------------------------------------------------------------
