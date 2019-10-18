@@ -92,16 +92,12 @@ t2bs_prepare() {
 					else
 						# search if last backup needs to be resumed
 
-						# check status of the last backup (only if infofile exists)
-						if lb_istrue $hard_links && [ -f "$destination/$b/backup.info" ] ; then
-							# if last backup failed or was cancelled, resume
-							rsync_result $(get_infofile_value "$destination/$b/backup.info" "$src" rsync_result)
-							if [ $? == 2 ] ; then
-								args+=(resume=true)
-								log_debug "prepare: next backup will be resumed from $b"
-								first=false
-								continue
-							fi
+						# check status of the last backup
+						if ! check_infofile_rsync_result $b "$src" ; then
+							args+=(resume=true)
+							log_debug "prepare: next backup will be resumed from $b"
+							first=false
+							continue
 						fi
 					fi
 				fi
@@ -244,35 +240,39 @@ t2bs_backup() {
 	lb_set_config -s src1 "$infofile" rsync_result -1
 	lb_set_config -s src1 "$infofile" trash $last_clean_backup
 
-	# set final destination with is a representation of the system tree
-	# e.g. /path/to/my/backups/mypc/2016-12-31-2359/files/home/user/tobackup
-	finaldest=$destination/$backup_date/$path_dest
-
-	# create parent destination folder
-	mkdir -p "$(dirname "$finaldest")"
-	if [ $? != 0 ] ; then
-		internal_error "write error on destination"
-		srv_clean_exit $?
-	fi
-
 	# resume: search the last backup
-	if lb_istrue $resume && lb_istrue $hard_links ; then
+	if lb_istrue $resume ; then
 		local b history=($(get_backup_history -n -a "$src")) resume_date
 
 		for b in "${history[@]}" ; do
-			case $b in
-				"$backup_date"|"$last_clean_backup")
-					# ignore
-					;;
-				*)
-					resume_date=$b
-					;;
-			esac
-		done
+			# mirror mode: take the latest
+			if [ $keep_limit == 0 ] ; then
+				resume_date=$b
+				break
+			fi
 
+			# ignore the last clean backup
+			if [ "$b" != "$last_clean_backup" ] ; then
+				resume_date=$b
+				break
+			fi
+		done
+	fi
+
+	# create backup folder
+	mkdir -p "$destination/$backup_date/$path_dest"
+	if [ $? != 0 ] ; then
+		internal_error "cannot create backup destination"
+		srv_clean_exit $?
+	fi
+
+	# resume from old backup
+	if lb_istrue $resume ; then
 		log_debug "resume backup: move backup from $resume_date to $backup_date for $path_dest"
 
+		# clean current backup dir and move old in it
 		[ -n "$resume_date" ] && \
+		rmdir "$destination/$backup_date/$path_dest" && \
 		move_backup $resume_date $backup_date "$path_dest" &> /dev/null
 		if [ $? == 0 ] ; then
 			# delete old infofile
@@ -281,42 +281,34 @@ t2bs_backup() {
 			internal_error "resume failed"
 			srv_clean_exit $?
 		fi
-	fi
+	else
+		# no resume
 
-	# default behaviour: mkdir
-	mv_dest=false
+		# if last backup defined, prepare versionning
+		if [ -n "$last_clean_backup" ] ; then
+			# if  mirror mode or no hard links, move destination
+			if [ $keep_limit == 0 ] || ! lb_istrue $hard_links ; then
 
-	# if mirror mode or trash mode, move destination
-	if [ -n "$last_clean_backup" ] ; then
-		if [ $keep_limit == 0 ] || ! lb_istrue $hard_links ; then
-			mv_dest=true
+				log_debug "move backup from $last_clean_backup to $backup_date for $path_dest"
+
+				# move old backup as current backup and update latest link
+				rmdir "$destination/$backup_date/$path_dest" && \
+				move_backup $last_clean_backup $backup_date "$path_dest" &> /dev/null && \
+				create_latest_link &> /dev/null
+
+				if [ $? != 0 ] ; then
+					print_error --log "failed to prepare destination"
+					srv_clean_exit 206
+				fi
+			fi
 		fi
 	fi
 
-	if $mv_dest ; then
-		# move old backup as current backup (and latest link)
-		log_debug "move backup from $last_clean_backup to $backup_date for $path_dest"
-
-		move_backup $last_clean_backup $backup_date "$path_dest" &> /dev/null && \
-		create_latest_link &> /dev/null
-	else
-		# create destination
-		log_debug "create final destination: $finaldest"
-		mkdir -p "$finaldest" &> /dev/null
-	fi
-
-	# if mkdir (hard links mode) or mv (trash mode) failed,
-	if [ $? != 0 ] ; then
-		print_error --log "failed to prepare destination"
-		srv_clean_exit 206
-	fi
-
 	# If keep_limit = 0 (mirror mode), we don't need to use versionning.
-	# If first backup, no need to add incremental options.
-	if ! lb_istrue $hard_links && [ $keep_limit != 0 ] && [ -n "$last_clean_backup" ] ; then
+	# If no hard links, do not create trash
+	if [ -n "$last_clean_backup" ] && [ $keep_limit != 0 ] && ! lb_istrue $hard_links; then
 		log_debug "create trash: $last_clean_backup"
 
-		# create trash
 		mkdir -p "$destination/$last_clean_backup/$path_dest" &> /dev/null
 		if [ $? != 0 ] ; then
 			print_error --log "failed to prepare trash"

@@ -44,9 +44,8 @@ fi
 lbg_set_gui console
 notifications=false
 
-# disable debug messages
-lb_set_log_level INFO
-lb_set_display_level INFO
+# disable display messages
+lb_set_display_level ERROR
 
 # change current script name
 lb_current_script_name=time2backup-server
@@ -102,6 +101,9 @@ if [ -f config/time2backup-server.conf ] ; then
 		exit 202
 	fi
 fi
+
+# set log level
+lb_istrue $debug_mode || lb_set_log_level INFO
 
 # get current context info
 user=$lb_current_user

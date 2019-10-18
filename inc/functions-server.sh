@@ -13,7 +13,7 @@
 #     print_error
 #     internal_error
 #     usage_error
-#     log_entry
+#     log_info
 #     log_error
 #     log_debug
 #     debug
@@ -62,16 +62,16 @@ usage_error() {
 
 
 # Log info in server log
-# Usage: log_entry TEXT
-log_entry() {
-	lb_log -d "$@"
+# Usage: log_info TEXT
+log_info() {
+	lb_log_info -d "[pid $$]" "$@"
 }
 
 
 # Log error in server log
 # Usage: log_error TEXT
 log_error() {
-	log_entry -l ERROR -p "$@"
+	lb_log_error -d "[pid $$]" "$@"
 }
 
 
@@ -79,11 +79,12 @@ log_error() {
 # Usage: log_debug TEXT
 log_debug() {
 	lb_istrue $debug_mode || return 0
-	log_entry -l DEBUG -p "$@"
+	lb_log_debug -d "[pid $$]" "$@"
 }
 
 
 # Debug function to overwrite time2backup functions output behaviour
+# We redirect diplay messages to log file.
 # Usage: debug TEXT
 debug() {
 	log_debug "$@"
@@ -164,11 +165,11 @@ srv_check_password() {
 	if [ -s config/auth.conf ] ; then
 		if ! grep -q "^$1$" config/auth.conf ; then
 			print_error "authentication failed"
-			log_entry "Invalid password for $user from $ssh_info"
+			log_error "Invalid password for $user from $ssh_info"
 			return 1
 		fi
 
-		log_entry "Authentification succeeded for $user from $ssh_info"
+		log_info "Authentification succeeded for $user from $ssh_info"
 		return 0
 	fi
 }
@@ -186,7 +187,7 @@ srv_check_token() {
 		session=$(grep -E "^[0-9]+	$1	" "$credentials")
 
 		if [ $? == 0 ] ; then
-			log_entry "Authentication by token successful for $user from $ssh_info"
+			log_info "Authentication by token successful for $user from $ssh_info"
 
 			# get saved infos in credentials
 			lb_split "	" "$session"
@@ -196,7 +197,7 @@ srv_check_token() {
 	fi
 
 	print_error "authentication failed"
-	log_entry "Invalid token for $user from $ssh_info"
+	log_info "Invalid token for $user from $ssh_info"
 	return 1
 }
 
