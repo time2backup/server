@@ -3,6 +3,7 @@
 ## Table of contents
 * [How to install time2backup server](#install)
 * [How to use time2backup server](#usage)
+* [Configuration and security](#config)
 * [Troubleshootting](#troubleshootting)
 
 ---------------------------------------------------------------
@@ -26,6 +27,16 @@ If you have put the server in a custom place, you have to specify the path of th
 ```
 t2bserver_path = /home/user/time2backup-server/t2b-server.sh
 ```
+
+<a name="conf"></a>
+## Configuration and security
+To secure access to time2backup server, create the file `config/auth.conf` and add passwords
+like the following examples:
+```
+user:password
+```
+Remember that this file is in plain text, and may be visible by time2backup users in their
+client configuration file. Use random generated passwords, or long tokens.
 
 
 <a name="troubleshootting"></a>

@@ -152,25 +152,24 @@ srv_save_token() {
 # Usage: srv_check_password [USER:]PASSWORD
 srv_check_password() {
 	# load authentication file if exists
-	if [ -f config/auth.conf ] ; then
+	[ -f config/auth.conf ] || return 0
 
-		# (re)secure auth file
-		if [ "$lb_current_user" == root ] ; then
-			chown root config/auth.conf
-			chmod 600 config/auth.conf
+	# (re)secure auth file
+	if [ "$lb_current_user" == root ] ; then
+		chown root config/auth.conf
+		chmod 600 config/auth.conf
+	fi
+
+	# if passwords are set, test it
+	if [ -s config/auth.conf ] ; then
+		if ! grep -q "^$1$" config/auth.conf ; then
+			print_error "authentication failed"
+			log_entry "Invalid password for $user from $ssh_info"
+			return 1
 		fi
 
-		# if passwords are set, test it
-		if [ -s config/auth.conf ] ; then
-			if ! grep -q "^$1$" config/auth.conf ; then
-				print_error "authentication failed"
-				log_entry "Invalid password for $user from $ssh_info"
-				return 1
-			fi
-
-			log_entry "Authentification succeeded for $user from $ssh_info"
-			return 0
-		fi
+		log_entry "Authentification succeeded for $user from $ssh_info"
+		return 0
 	fi
 }
 

@@ -398,7 +398,6 @@ t2bs_history() {
 
 	# print backup versions
 	for b in "${file_history[@]}" ; do
-		# print the version
 		echo "$b"
 	done
 }
