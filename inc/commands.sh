@@ -178,6 +178,10 @@ t2bs_backup() {
 				shift
 				;;
 
+			--t2b-trash)
+				trash_mode=true
+				;;
+
 			*)
 				break
 				;;
@@ -315,7 +319,17 @@ t2bs_backup() {
 		# create trash
 		mkdir -p "$destination/$last_clean_backup/$path_dest" &> /dev/null
 		if [ $? != 0 ] ; then
-			print_error --log "failed to prepare destination"
+			print_error --log "failed to prepare trash"
+			srv_clean_exit 206
+		fi
+	fi
+
+	# trash mode
+	if lb_istrue $trash_mode ; then
+		# create trash
+		mkdir -p "$destination/trash/$path_dest" &> /dev/null
+		if [ $? != 0 ] ; then
+			print_error --log "failed to prepare trash"
 			srv_clean_exit 206
 		fi
 	fi
