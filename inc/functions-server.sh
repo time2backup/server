@@ -237,10 +237,12 @@ srv_clean_exit() {
 	# set exit code if specified
 	[ -n "$1" ] && lb_exitcode=$1
 
-	clean_empty_backup -i $backup_date "$path_dest" &> /dev/null
-
 	# delete backup lock
 	release_lock &> /dev/null
+
+	if [ "$command" == backup ] ; then
+		clean_empty_backup -i $backup_date "$path_dest" &> /dev/null
+	fi
 
 	lb_exit
 }

@@ -57,11 +57,17 @@ t2bs_prepare() {
 
 			# test backup date format
 			if ! check_backup_date "$backup_date" ; then
-				usage_error "prepare backup: backup date format not conform: $1"
+				usage_error "prepare backup: backup date format not conform: $backup_date"
 				return $?
 			fi
 
 			src=$*
+
+			# test if path is defined
+			if [ -z "$src" ] ; then
+				usage_error "prepare restore: source is missing"
+				return $?
+			fi
 
 			# test if a backup is running
 			if current_lock -q ; then
@@ -115,19 +121,51 @@ t2bs_prepare() {
 
 		restore)
 			# Usage: restore DATE PATH
-			usage_error "restore command not yet available"
-			return $?
 
 			backup_date=$1
 			shift
 
 			# test backup date format
-			if ! check_backup_date "$backup_date" && [ "$backup_date" != latest ] ; then
-				usage_error "prepare restore: backup date format not conform: $1"
+			if ! check_backup_date "$backup_date" ; then
+				usage_error "prepare restore: backup date format not conform: $backup_date"
 				return $?
 			fi
 
-			src=$*
+			# test if path is defined
+			if [ -z "$*" ] ; then
+				usage_error "prepare restore: source is missing"
+				return $?
+			fi
+
+			debug "search versions for $*"
+
+			# get backup versions of this file
+			file_history=($(get_backup_history "$*"))
+
+			# recheck if date is still there
+			local found=false
+			if [ ${#file_history[@]} -gt 0 ] ; then
+				lb_in_array "$backup_date" "${file_history[@]}" && found=true
+			fi
+
+			if ! $found ; then
+				print_error "Backup version has vanished! Please retry later"
+				return 202
+			fi
+
+			# test if latest is a directory
+			local backup_path=$(get_backup_path "$*")
+
+			echo "rsync_result = $(get_infofile_value "$destination/$backup_date/backup.info" "$*" rsync_result)"
+
+			[ -n "$backup_path" ] && [ -d "$destination/$backup_date/$backup_path" ] && \
+				echo "src_type = directory"
+
+			# check if a current backup is running
+			current_lock -q && echo "status = running"
+
+			# forward args to write in credentials file
+			args=(date=$backup_date)
 			;;
 
 		*)
@@ -163,13 +201,19 @@ t2bs_backup() {
 	while [ $# -gt 0 ] ; do
 		case $1 in
 			--t2b-rotate)
-				[ -n "$2" ] || return 1
+				if [ -z "$2" ] ; then
+					usage_error "backup: --t2b-rotate argument missing"
+					return $?
+				fi
 				keep_limit=$2
 				shift
 				;;
 
 			--t2b-keep)
-				lb_is_integer $2 || return 1
+				if ! lb_is_integer $2 ; then
+					usage_error "backup: --t2b-keep argument not conform: $2"
+					return $?
+				fi
 				clean_keep=$2
 				shift
 				;;
@@ -360,10 +404,55 @@ t2bs_backup() {
 
 
 # Restore files
-# Usage: t2bs_restore [OPTIONS] PATH
+# Usage: t2bs_restore [OPTIONS]
 t2bs_restore() {
-	lb_error TODO
-	return 201
+
+	local no_lock=false
+
+	# get command options
+	while [ $# -gt 0 ] ; do
+		case $1 in
+			--t2b-nolock)
+				no_lock=true
+				;;
+
+			*)
+				break
+				;;
+		esac
+		shift # load next argument
+	done
+
+	# get infos from token
+	for i in "${token_infos[@]}" ; do
+		case $(echo "$i" | cut -d= -f1) in
+			date)
+				backup_date=$(echo "$i" | cut -d= -f2-)
+				;;
+		esac
+	done
+
+	# verify if required variables are there
+	if [ -z "$backup_date" ] ; then
+		internal_error "failed to get infos from token"
+		return $?
+	fi
+
+	# check rsync syntax
+	srv_check_rsync_options "$@" || return $?
+
+	log_debug "current restore from $backup_date"
+
+	# catch term signals
+	catch_kills srv_cancel_exit
+
+	# run rsync command
+	"$rsync_path" "$@"
+	res=$?
+
+	log_debug "rsync result: $res"
+
+	srv_clean_exit
 }
 
 
@@ -399,13 +488,8 @@ t2bs_history() {
 	# get backup versions of this file
 	file_history=($(get_backup_history "${history_opts[@]}" "$*"))
 
-	# no backup found
-	[ ${#file_history[@]} == 0 ] && return 0
-
 	# print backup versions
-	for b in "${file_history[@]}" ; do
-		echo "$b"
-	done
+	[ ${#file_history[@]} == 0 ] || echo ${file_history[*]}
 }
 
 
