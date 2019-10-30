@@ -75,6 +75,7 @@
 #     run_before
 #     run_after
 #     move_backup
+#     prepare_backup
 #     prepare_trash
 #     create_latest_link
 #     notify_backup_end
@@ -726,6 +727,9 @@ delete_backup() {
 	# usage error
 	[ -z "$1" ] && return 1
 
+	# test mode: no delete
+	lb_istrue $test_mode && return 0
+
 	# delete log file
 	debug "Deleting log file time2backup_$1.log..."
 	rm -f "$logs_directory/time2backup_$1.log" || \
@@ -1245,8 +1249,10 @@ load_config() {
 		return 1
 	fi
 
-	# load config
-	if ! lb_import_config "$config_file" ; then
+	# analyse the default config template and load config
+	lb_read_config -a "$lb_current_script_directory"/config/time2backup.example.conf && \
+	lb_import_config "$config_file" "${lb_read_config[@]}"
+	if [ $? != 0 ] ; then
 		lb_display_error "$tr_error_read_config"
 		return 1
 	fi
@@ -1977,6 +1983,9 @@ prepare_rsync() {
 		lb_istrue $files_progress && rsync_cmd+=(--progress)
 	fi
 
+	# test mode
+	lb_istrue $test_mode && rsync_cmd+=(--dry-run)
+
 	# remote rsync path
 	if lb_istrue $remote_source ; then
 		local rsync_remote_command=$(get_rsync_remote_command)
@@ -2102,21 +2111,42 @@ read_remote_config() {
 #               $destination, $hard_links, $last_clean_backup
 prepare_remote_destination() {
 
-	local response
+	local response code=0
 
 	debug "Connect to remote server..."
 
 	# run distant command
 	if [ "$1" == backup ] ; then
-		response=$("${t2bserver_cmd[@]}" prepare "$@" 2>> "$logfile")
+		response=$("${t2bserver_cmd[@]}" prepare "$@" 2> >(tee -a "$logfile" >&2))
 	else
 		response=$("${t2bserver_cmd[@]}" prepare "$@")
 	fi
 
-	if [ $? != 0 ] ; then
-		lb_display_error --log "Remote server not reachable or not ready. Read log for more details."
-		return 1
-	fi
+	code=$?
+	case $code in
+		0)
+			# OK: continue
+			;;
+
+		205)
+			# backup already running
+
+			# print error message
+			lb_display_error "$tr_backup_already_running"
+
+			# display window error
+			if ! lb_istrue $recurrent_backup && ! lb_istrue $console_mode ; then
+				lbg_error "$tr_backup_already_running"
+			fi
+			clean_exit 8
+			;;
+
+		*)
+			debug "Server returned error code: $code"
+			lb_display_error --log "Remote server not reachable or not ready. Read log for more details."
+			return 1
+			;;
+	esac
 
 	debug "Server response:"
 	debug "$response"

@@ -28,7 +28,7 @@ t2bs_prepare() {
 	# prepare destination
 	if ! prepare_destination &> /dev/null ; then
 		print_error --log "destination not writable"
-		return 206
+		return 204
 	fi
 
 	# prepare server response
@@ -58,7 +58,7 @@ t2bs_prepare() {
 			# test backup date format
 			if ! check_backup_date "$backup_date" ; then
 				usage_error "prepare backup: backup date format not conform: $backup_date"
-				return $?
+				return 201
 			fi
 
 			src=$*
@@ -66,7 +66,7 @@ t2bs_prepare() {
 			# test if path is defined
 			if [ -z "$src" ] ; then
 				usage_error "prepare restore: source is missing"
-				return $?
+				return 201
 			fi
 
 			# test if a backup is running
@@ -79,7 +79,7 @@ t2bs_prepare() {
 					fi
 				else
 					print_error "backup is already running"
-					return 208
+					return 205
 				fi
 			fi
 
@@ -128,13 +128,13 @@ t2bs_prepare() {
 			# test backup date format
 			if ! check_backup_date "$backup_date" ; then
 				usage_error "prepare restore: backup date format not conform: $backup_date"
-				return $?
+				return 201
 			fi
 
 			# test if path is defined
 			if [ -z "$*" ] ; then
 				usage_error "prepare restore: source is missing"
-				return $?
+				return 201
 			fi
 
 			debug "search versions for $*"
@@ -171,7 +171,7 @@ t2bs_prepare() {
 		*)
 			# bad command
 			usage_error "bad command: $*"
-			return $?
+			return 201
 			;;
 	esac
 
@@ -182,7 +182,7 @@ t2bs_prepare() {
 	# write token in credentials file
 	if ! srv_save_token "$token" "${args[@]}" ; then
 		internal_error "write token failed"
-		return $?
+		return 202
 	fi
 
 	# output infos
@@ -203,7 +203,7 @@ t2bs_backup() {
 			--t2b-rotate)
 				if [ -z "$2" ] ; then
 					usage_error "backup: --t2b-rotate argument missing"
-					return $?
+					return 201
 				fi
 				keep_limit=$2
 				shift
@@ -212,7 +212,7 @@ t2bs_backup() {
 			--t2b-keep)
 				if ! lb_is_integer $2 ; then
 					usage_error "backup: --t2b-keep argument not conform: $2"
-					return $?
+					return 201
 				fi
 				clean_keep=$2
 				shift
@@ -230,7 +230,7 @@ t2bs_backup() {
 	done
 
 	# check rsync syntax
-	srv_check_rsync_options "$@" || return $?
+	srv_check_rsync_options "$@" || return 201
 
 	# get infos from token
 	for i in "${token_infos[@]}" ; do
@@ -253,7 +253,7 @@ t2bs_backup() {
 	# verify if required variables are there
 	if [ -z "$backup_date" ] || [ -z "$src" ] ; then
 		internal_error "failed to get infos from token"
-		return $?
+		return 202
 	fi
 
 	# check lock file
@@ -261,9 +261,9 @@ t2bs_backup() {
 	if [ -n "$lock_file" ] ; then
 		# lock file exists: compare token
 		if [ "$(lb_get_config "$lock_file" token)" != "$token" ] ; then
-			print_error "current backup already running"
+			print_error "destination locked"
 			log_error "token provided valid, but different from lock file for user $user from $ssh_info"
-			return 208
+			return 205
 		fi
 	else
 		# create lock
@@ -307,7 +307,7 @@ t2bs_backup() {
 	mkdir -p "$destination/$backup_date/$path_dest"
 	if [ $? != 0 ] ; then
 		internal_error "cannot create backup destination"
-		srv_clean_exit $?
+		srv_clean_exit 204
 	fi
 
 	# resume from old backup
@@ -323,7 +323,7 @@ t2bs_backup() {
 			clean_empty_backup -i $resume_date &> /dev/null
 		else
 			internal_error "resume failed"
-			srv_clean_exit $?
+			srv_clean_exit 202
 		fi
 	else
 		# no resume
@@ -342,7 +342,7 @@ t2bs_backup() {
 
 				if [ $? != 0 ] ; then
 					print_error --log "failed to prepare destination"
-					srv_clean_exit 206
+					srv_clean_exit 202
 				fi
 			fi
 		fi
@@ -356,7 +356,7 @@ t2bs_backup() {
 		mkdir -p "$destination/$last_clean_backup/$path_dest" &> /dev/null
 		if [ $? != 0 ] ; then
 			print_error --log "failed to prepare trash"
-			srv_clean_exit 206
+			srv_clean_exit 202
 		fi
 	fi
 
@@ -366,7 +366,7 @@ t2bs_backup() {
 		mkdir -p "$destination/trash/$path_dest" &> /dev/null
 		if [ $? != 0 ] ; then
 			print_error --log "failed to prepare trash"
-			srv_clean_exit 206
+			srv_clean_exit 202
 		fi
 	fi
 
@@ -435,11 +435,19 @@ t2bs_restore() {
 	# verify if required variables are there
 	if [ -z "$backup_date" ] ; then
 		internal_error "failed to get infos from token"
-		return $?
+		return 202
 	fi
 
 	# check rsync syntax
-	srv_check_rsync_options "$@" || return $?
+	srv_check_rsync_options "$@" || return 201
+
+	# check lock
+	if ! $no_lock ; then
+		if current_lock -q ; then
+			print_error "destination locked"
+			return 205
+		fi
+	fi
 
 	log_debug "current restore from $backup_date"
 
@@ -477,12 +485,12 @@ t2bs_history() {
 	done
 
 	# missing arguments
-	[ -z "$*" ] && return 1
+	[ -z "$*" ] && return 201
 
 	# test backup destination
 	if ! prepare_destination &> /dev/null ; then
 		print_error "destination not ready"
-		return 4
+		return 204
 	fi
 
 	# get backup versions of this file
@@ -515,7 +523,7 @@ t2bs_rotate() {
 	# test backup destination
 	if ! prepare_destination &> /dev/null ; then
 		print_error "destination not ready"
-		return 4
+		return 204
 	fi
 
 	local keep=$keep_limit
@@ -525,12 +533,12 @@ t2bs_rotate() {
 		if lb_is_integer "$1" ; then
 			if [ $1 -lt 0 ] ; then
 				print_help
-				return 1
+				return 201
 			fi
 		else
 			if ! test_period "$1" ; then
 				print_help
-				return 2
+				return 201
 			fi
 		fi
 
@@ -538,14 +546,14 @@ t2bs_rotate() {
 	fi
 
 	# prepare backup destination
-	prepare_destination || return 4
+	prepare_destination || return 204
 
 	# free space mode
 	if $free_space ; then
 		free_space $free_size
 	else
 		# normal mode
-		rotate_backups $keep || return 5
+		rotate_backups $keep || return 205
 	fi
 }
 
@@ -554,7 +562,7 @@ t2bs_rotate() {
 # Usage: t2bs_rsync RSYNC_ARGS
 t2bs_rsync() {
 	# check rsync options
-	srv_check_rsync_options "$@" || return $?
+	srv_check_rsync_options "$@" || return 201
 
 	# run rsync command
 	"$rsync_path" "$@"

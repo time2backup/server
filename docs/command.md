@@ -35,15 +35,12 @@ time2backup-server [GLOBAL_OPTIONS] prepare COMMAND [ARGS...]
 ```
 
 ### Exit codes
-- 0: rsync OK
-- 1: Usage error
+- 0: time2backup server is ready
 - 201: Usage error
 - 202: Internal server error
-- 204: Authentication failed
-- 205: rsync command not ok
-- 206: destination not reachable
-- 208: current backup running
-- other: see rsync exit codes
+- 203: Authentication failed
+- 204: Destination not ready
+- 205: Destination locked
 
 ---------------------------------------------------------------
 <a name="backup"></a>
@@ -58,8 +55,14 @@ time2backup-server -t TOKEN backup [OPTIONS]
 ```
 
 ### Exit codes
-- 0: Backup successfully completed
-- 1: Usage error
+- 0: Backup succeeded
+- 201: Usage error
+- 202: Internal server error
+- 203: Authentication failed
+- 204: Destination not ready
+- 205: Destination locked
+- 217: Backup cancelled
+- [other]: see rsync exit codes
 
 ---------------------------------------------------------------
 <a name="restore"></a>
@@ -74,8 +77,14 @@ time2backup-server -t TOKEN restore [OPTIONS]
 ```
 
 ### Exit codes
-- 0: File(s) restored
-- 1: Usage error
+- 0: Restore succeeded
+- 201: Usage error
+- 202: Internal server error
+- 203: Authentication failed
+- 204: Destination not ready
+- 205: Destination locked
+- 217: Restore cancelled
+- [other]: see rsync exit codes
 
 ---------------------------------------------------------------
 <a name="history"></a>
@@ -94,10 +103,10 @@ time2backup-server [GLOBAL_OPTIONS] history [OPTIONS] PATH
 
 ### Exit codes
 - 0: History printed
-- 1: Usage error
-- 3: Config error
-- 4: Backup device is not reachable
-- 5: No backup found for the path
+- 201: Usage error
+- 202: Internal server error
+- 203: Authentication failed
+- 204: Destination not ready
 
 ---------------------------------------------------------------
 <a name="rotate"></a>
@@ -115,14 +124,12 @@ LIMIT        Set number of maximum backups to keep
 ```
 
 ### Exit codes
-- 0: rsync OK
+- 0: Rotate succeeded
 - 201: Usage error
 - 202: Internal server error
-- 203: Config error
-- 204: Bad password
-- 205: rsync command not ok
-- 206: destination not permitted/available
-- other: see rsync exit codes
+- 203: Authentication failed
+- 204: Destination not ready
+- 205: Rotate failed
 
 ---------------------------------------------------------------
 <a name="rsync"></a>
@@ -136,11 +143,8 @@ time2backup-server [GLOBAL_OPTIONS] rsync RSYNC_ARGS [RSYNC_ARGS...]
 ```
 
 ### Exit codes
-- 0: rsync OK
+- 0: rsync command succeeded
 - 201: Usage error
 - 202: Internal server error
-- 203: Config error
-- 204: Bad password
-- 205: rsync command not ok
-- 206: destination not permitted/available
-- other: see rsync exit codes
+- 203: Authentication failed
+- [other]: see rsync exit codes

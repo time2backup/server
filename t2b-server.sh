@@ -6,10 +6,10 @@
 #  MIT License
 #  Copyright (c) 2017-2019 Jean Prunneaux
 #
-#  Version 1.0.0-rc.1 (2019-10-21)
+#  Version 1.0.0 (2019-10-30)
 #
 
-declare -r version=1.0.0-rc.1
+declare -r version=1.0.0-rc.2
 
 
 #
@@ -128,7 +128,7 @@ while [ $# -gt 0 ] ; do
 			# password
 			if [ -z "$2" ] ; then
 				usage_error "global -p: missing password"
-				exit $?
+				exit 201
 			fi
 			client_password=$2
 			shift
@@ -138,7 +138,7 @@ while [ $# -gt 0 ] ; do
 			# token
 			if [ -z "$2" ] ; then
 				usage_error "global -t: missing token"
-				exit $?
+				exit 201
 			fi
 			token=$2
 			shift
@@ -148,7 +148,7 @@ while [ $# -gt 0 ] ; do
 			# ssh infos
 			if [ -z "$2" ] ; then
 				usage_error "global -s: missing ssh info"
-				exit $?
+				exit 201
 			fi
 
 			# option allowed only for root user
@@ -160,7 +160,7 @@ while [ $# -gt 0 ] ; do
 			# user
 			if [ -z "$2" ] ; then
 				usage_error "global -u: missing user"
-				exit $?
+				exit 201
 			fi
 
 			# option allowed only for root user
@@ -178,7 +178,7 @@ done
 # get main command
 if [ $# == 0 ] ; then
 	usage_error "no main command"
-	exit $?
+	exit 201
 fi
 
 command=$1
@@ -209,18 +209,18 @@ srv_clean_tokens
 case $command in
 	prepare|history|rotate|rsync)
 		# check password
-		srv_check_password "$client_password" || exit 204
+		srv_check_password "$client_password" || exit 203
 		;;
 
 	backup|restore)
 		# check token
-		srv_check_token "$token" || exit 204
+		srv_check_token "$token" || exit 203
 		;;
 
 	*)
 		# bad command
 		usage_error "$*"
-		exit $?
+		exit 201
 		;;
 esac
 
