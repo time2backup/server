@@ -271,8 +271,8 @@ t2bs_backup() {
 		lb_set_config "$(current_lock -f)" token "$token"
 	fi
 
-	# catch term signals
-	catch_kills srv_cancel_exit
+	# catch term signals (must be silent for some OS)
+	catch_kills srv_cancel_exit &> /dev/null
 
 	create_infofile
 
@@ -383,7 +383,8 @@ t2bs_backup() {
 	[ $res != 0 ] && lb_exitcode=$res
 
 	# if cancel, do not consider as cancelled backup
-	catch_kills srv_clean_exit
+	# (must be silent for some OS)
+	catch_kills srv_clean_exit &> /dev/null
 
 	# clean empty trash and infofile
 	clean_empty_backup -i $last_clean_backup "$path_dest" &> /dev/null
@@ -451,8 +452,8 @@ t2bs_restore() {
 
 	log_debug "current restore from $backup_date"
 
-	# catch term signals
-	catch_kills srv_cancel_exit
+	# catch term signals (must be silent for some OS)
+	catch_kills srv_cancel_exit &> /dev/null
 
 	# run rsync command
 	"$rsync_path" "$@"
