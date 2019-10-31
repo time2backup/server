@@ -88,6 +88,12 @@ fi
 #  Main program
 #
 
+# if root: secure default config
+if [ "$lb_current_user" == root ] ; then
+	chown root config/time2backup-server.default.conf &> /dev/null
+	chmod 644 config/time2backup-server.default.conf &> /dev/null
+fi
+
 # analyse the default config template
 if ! lb_read_config -a config/time2backup-server.default.conf ; then
 	print_error --log "error in config"
@@ -102,6 +108,13 @@ fi
 
 # load config if exists
 if [ -f config/time2backup-server.conf ] ; then
+	# if root: secure config
+	if [ "$lb_current_user" == root ] ; then
+		chown root config/time2backup-server.conf &> /dev/null
+		chmod 644 config/time2backup-server.conf &> /dev/null
+	fi
+
+	# load config (securely)
 	if ! lb_import_config config/time2backup-server.conf "${lb_read_config[@]}" ; then
 		print_error --log "error in config"
 		exit 202
@@ -199,7 +212,7 @@ fi
 [ -z "$rsync_path" ] && rsync_path=rsync
 
 # set log file
-[ -z "$logfile" ] && logfile=t2b.log
+[ -z "$logfile" ] && logfile=server.log
 lb_set_logfile -a "$logfile"
 
 # clean old tokens
