@@ -125,14 +125,8 @@ fi
 lb_istrue $debug_mode || lb_set_log_level INFO
 
 # get current context info
-user=$lb_current_user
 ssh_info=$SSH_CLIENT
-
-# rerun in sudo mode
-if lb_istrue $sudo_mode && [ $user != root ] ; then
-	sudo "$0" -u $user -s "$ssh_info" "$@"
-	exit $?
-fi
+[ -n "$ssh_info" ] && ssh_info="from $ssh_info"
 
 # get global options
 while [ $# -gt 0 ] ; do
@@ -157,30 +151,6 @@ while [ $# -gt 0 ] ; do
 			shift
 			;;
 
-		-s)
-			# ssh infos
-			if [ -z "$2" ] ; then
-				usage_error "global -s: missing ssh info"
-				exit 201
-			fi
-
-			# option allowed only for root user
-			[ "$lb_current_user" == root ] && ssh_info=$2
-			shift
-			;;
-
-		-u)
-			# user
-			if [ -z "$2" ] ; then
-				usage_error "global -u: missing user"
-				exit 201
-			fi
-
-			# option allowed only for root user
-			[ "$lb_current_user" == root ] && user=$2
-			shift
-			;;
-
 		*)
 			break
 			;;
@@ -198,7 +168,7 @@ command=$1
 shift
 
 # test config
-if [ -z "$destination" ] ; then
+if ! srv_check_config ; then
 	print_error --log "error in config"
 	exit 202
 fi

@@ -7,8 +7,11 @@
 #  Website: https://github.com/time2backup/server
 #
 
+# current directory
+curdir=$(dirname "$0")
+
 # load libbash
-source "$(dirname "$0")"/libbash/libbash.sh - &> /dev/null
+source "$curdir"/libbash/libbash.sh - &> /dev/null
 if [ $? != 0 ] ; then
 	echo >&2 "internal error"
 	exit 1
@@ -26,25 +29,20 @@ if [ $? != 0 ] ; then
 	exit 1
 fi
 
-# if no force mode
-if [ "$1" != "-f" ] ; then
-	lb_yesno "Do you want to make sudo mode be enabled on your system?" || return 0
+# create t2b group if not exists
+if ! grep -q '^t2b-server:' /etc/group ; then
+	addgroup t2b-server
+	if [ $? != 0 ] ; then
+		lb_error "Cannot create group t2b-server"
+		exit 1
+	fi
 fi
 
-# create t2b group
-addgroup t2b-server
-if [ $? != 0 ] ; then
-	lb_error "Cannot create group t2b-server"
-	exit 1
-fi
-
-# create sudoers file
-mkdir -p /etc/sudoers.d && touch /etc/sudoers.d/time2backup-server && \
-chown root:root /etc/sudoers.d/time2backup-server && chmod 640 /etc/sudoers.d/time2backup-server && \
-echo "%t2b-server ALL = NOPASSWD:/usr/bin/time2backup-server" > /etc/sudoers.d/time2backup-server
-if [ $? != 0 ] ; then
-	lb_error "sudoers file cannot be modified"
-	exit 1
-fi
-
-echo "[INFO] Add all authorized users in the 't2b-server' group if you want to enable sudo mode."
+# secure current directory permissions
+chmod -R 750 "$curdir"
+chmod -x *.md config/* docs/* inc/* \
+         libbash/*.* libbash/*/*
+touch "$curdir"/.access && chmod 660 "$curdir"/.access
+touch "$curdir"/config/auth.conf && chmod 640 "$curdir"/config/auth.conf
+touch "$curdir"/server.log && chmod 640 "$curdir"/server.log
+chown -R root:t2b-server "$curdir"
