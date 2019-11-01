@@ -5,6 +5,7 @@
 * [How to use time2backup server](#usage)
 * [Configuration and security](#config)
 * [Sudo mode](#sudo)
+* [How to uninstall time2backup server](#uninstall)
 * [Troubleshootting](#troubleshootting)
 
 ---------------------------------------------------------------
@@ -17,14 +18,14 @@
 ### Debian/Ubuntu package
 1. Download time2backup server [deb package here](https://time2backup.org/download/server/stable)
 2. Install package: `dpkg -i time2backup-server-X.X.X.deb`
-3. You may have to set user permissions manually for access to config and log files
+3. Add all authorized users to run time2backup server in the `t2b-server` group
 
 ### Manual install
 1. Download [time2backup server here](https://time2backup.org/download/server/stable)
 2. Uncompress archive where you want
 3. Copy the file `config/time2backup-server.default.conf` to `config/time2backup-server.conf`
 4. Edit the config file with at least the destination path
-5. (optionnal) Run `install.sh` script to add the `time2backup-server` command and prepare for sudo mode.
+5. (optionnal) Run `install.sh` script and add all users who wants to run time2backup server in the `t2b-server` group
 
 <a name="usage"></a>
 ## How to use time2backup server
@@ -48,15 +49,17 @@ user:password
 Remember that this file is in plain text, and may be visible by time2backup users in their
 client configuration file. Use random generated passwords, or long tokens.
 
-<a name="sudo"></a>
-## Sudo mode
-If you need to execute time2backup server as root, you have to activate the sudo mode in configuration:
-```
-sudo_mode = true
-```
-If you haven't done it yet, run `install.sh` script and add all authorized users to `t2b-server` group.
+<a name="uninstall"></a>
+## How to uninstall time2backup
+### Docker image
+[Follow instructions here](https://github.com/time2backup/docker-server)
 
-Please note that the `sudo` command must be installed on your system.
+### Debian/Ubuntu package
+Uninstall package: `apt remove time2backup-server`
+
+### Manual install
+1. (optionnal) Run `uninstall.sh` script if you have run `install.sh` before.
+2. Delete the time2backup-server folder
 
 <a name="troubleshootting"></a>
 ## Troubleshootting

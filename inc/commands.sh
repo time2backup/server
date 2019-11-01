@@ -262,7 +262,7 @@ t2bs_backup() {
 		# lock file exists: compare token
 		if [ "$(lb_get_config "$lock_file" token)" != "$token" ] ; then
 			print_error "destination locked"
-			log_error "token provided valid, but different from lock file for user $user from $ssh_info"
+			log_error "token provided valid, but different from lock file for user $lb_current_user $ssh_info"
 			return 205
 		fi
 	else

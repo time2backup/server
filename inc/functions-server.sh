@@ -18,6 +18,7 @@
 #     log_debug
 #     debug
 #   Security functions
+#     srv_check_config
 #     srv_save_token
 #     srv_check_password
 #     srv_check_token
@@ -96,6 +97,14 @@ debug() {
 #
 
 
+# Check config
+# Usage: srv_check_config
+srv_check_config() {
+	[ -n "$destination" ] && \
+	lb_is_integer $token_expiration && [ $token_expiration -gt 0 ]
+}
+
+
 # Create and secure credential file
 # Usage: srv_save_token TOKEN [ARGS]
 # Dependencies: $credentials
@@ -165,11 +174,11 @@ srv_check_password() {
 	if [ -s config/auth.conf ] ; then
 		if ! grep -q "^$1$" config/auth.conf ; then
 			print_error "authentication failed"
-			log_error "Invalid password for $user from $ssh_info"
+			log_error "Invalid password for $lb_current_user $ssh_info"
 			return 1
 		fi
 
-		log_info "Authentification succeeded for $user from $ssh_info"
+		log_info "Authentification succeeded for $lb_current_user $ssh_info"
 		return 0
 	fi
 }
@@ -187,7 +196,7 @@ srv_check_token() {
 		session=$(grep -E "^[0-9]+	$1	" "$credentials")
 
 		if [ $? == 0 ] ; then
-			log_info "Authentication by token successful for $user from $ssh_info"
+			log_info "Authentication by token successful for $lb_current_user $ssh_info"
 
 			# get saved infos in credentials
 			lb_split "	" "$session"
@@ -197,7 +206,7 @@ srv_check_token() {
 	fi
 
 	print_error "authentication failed"
-	log_info "Invalid token for $user from $ssh_info"
+	log_info "Invalid token for $lb_current_user $ssh_info"
 	return 1
 }
 
