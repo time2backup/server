@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.0 RC 3 (2019-11-01)
+- Add install/uninstall scripts
+- Removed sudo mode
+- Upgrade libbash.sh 1.14.4
+
 ## 1.0.0 RC 2 (2019-10-30)
 - Changed exit codes
 - Secured config import

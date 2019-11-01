@@ -88,31 +88,20 @@ fi
 #  Main program
 #
 
-# if root: secure default config
-if [ "$lb_current_user" == root ] ; then
-	chown root config/time2backup-server.default.conf &> /dev/null
-	chmod 644 config/time2backup-server.default.conf &> /dev/null
-fi
-
 # analyse the default config template
-if ! lb_read_config -a config/time2backup-server.default.conf ; then
-	print_error --log "error in config"
+if ! lb_read_config -a config/time2backup-server.example.conf ; then
+	print_error --log "error in default config"
 	exit 202
 fi
 
 # load the default config
-if ! lb_import_config config/time2backup-server.default.conf ; then
-	print_error --log "error in config"
+if ! lb_import_config config/time2backup-server.example.conf ; then
+	print_error --log "error in default config"
 	exit 202
 fi
 
 # load config if exists
 if [ -f config/time2backup-server.conf ] ; then
-	# if root: secure config
-	if [ "$lb_current_user" == root ] ; then
-		chown root config/time2backup-server.conf &> /dev/null
-		chmod 644 config/time2backup-server.conf &> /dev/null
-	fi
 
 	# load config (securely)
 	if ! lb_import_config config/time2backup-server.conf "${lb_read_config[@]}" ; then

@@ -40,9 +40,13 @@ fi
 
 # secure current directory permissions
 chmod -R 750 "$curdir"
-chmod -x *.md config/* docs/* inc/* \
-         libbash/*.* libbash/*/*
+chmod -x "$curdir"/*.md "$curdir"/config/* "$curdir"/docs/* "$curdir"/inc/* \
+         "$curdir"/libbash/*.* "$curdir"/libbash/*/*
 touch "$curdir"/.access && chmod 660 "$curdir"/.access
 touch "$curdir"/config/auth.conf && chmod 640 "$curdir"/config/auth.conf
-touch "$curdir"/server.log && chmod 640 "$curdir"/server.log
+touch "$curdir"/server.log && chmod 660 "$curdir"/server.log
+
+[ -f "$curdir"/config/time2backup-server.conf ] || cp "$curdir"/config/time2backup-server.example.conf "$curdir"/config/time2backup-server.conf
+chmod 640 "$curdir"/config/time2backup-server.conf
+
 chown -R root:t2b-server "$curdir"

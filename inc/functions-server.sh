@@ -120,12 +120,6 @@ srv_save_token() {
 			log_error "credential path is not a file"
 			return 1
 		fi
-
-		# (re)secure file
-		if [ "$lb_current_user" == root ] ; then
-			chown root "$credentials"
-			chmod 600 "$credentials"
-		fi
 	else
 		# create & secure file
 		touch "$credentials" && chmod 600 "$credentials"
@@ -163,12 +157,6 @@ srv_save_token() {
 srv_check_password() {
 	# load authentication file if exists
 	[ -f config/auth.conf ] || return 0
-
-	# (re)secure auth file
-	if [ "$lb_current_user" == root ] ; then
-		chown root config/auth.conf
-		chmod 600 config/auth.conf
-	fi
 
 	# if passwords are set, test it
 	if [ -s config/auth.conf ] ; then
