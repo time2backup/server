@@ -102,7 +102,6 @@ fi
 
 # load config if exists
 if [ -f config/time2backup-server.conf ] ; then
-
 	# load config (securely)
 	if ! lb_import_config config/time2backup-server.conf "${lb_read_config[@]}" ; then
 		print_error --log "error in config"

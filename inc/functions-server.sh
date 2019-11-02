@@ -100,7 +100,11 @@ debug() {
 # Check config
 # Usage: srv_check_config
 srv_check_config() {
-	[ -n "$destination" ] && \
+	# test if destination is set (if rsync, not needed)
+	if [ "$command" != rsync ] ; then
+		[ -z "$destination" ] && return 1
+	fi
+
 	lb_is_integer $token_expiration && [ $token_expiration -gt 0 ]
 }
 
