@@ -49,6 +49,11 @@ user:password
 Remember that this file is in plain text, and may be visible by time2backup users in their
 client configuration file. Use random generated passwords, or long tokens.
 
+To use time2backup server with sudo, you have to add the following line in `/etc/sudoers.d/time2backup-server`:
+```
+<USER> ALL = NOPASSWD:/usr/bin/time2backup-server
+```
+
 <a name="uninstall"></a>
 ## How to uninstall time2backup
 ### Docker image

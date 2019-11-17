@@ -120,7 +120,7 @@ time2backup-server [GLOBAL_OPTIONS] rotate [LIMIT]
 
 ### Options
 ```
-LIMIT        Set number of maximum backups to keep
+LIMIT  Set number of maximum backups to keep
 ```
 
 ### Exit codes

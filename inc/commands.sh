@@ -506,27 +506,6 @@ t2bs_history() {
 # Usage: t2bs_rotate [OPTIONS] [LIMIT]
 t2bs_rotate() {
 
-	local free_space=false
-
-	# get options
-	while [ $# -gt 0 ] ; do
-		case $1 in
-			--free)
-				free_space=true
-				;;
-			*)
-				break
-				;;
-		esac
-		shift # load next argument
-	done
-
-	# test backup destination
-	if ! prepare_destination &> /dev/null ; then
-		print_error "destination not ready"
-		return 204
-	fi
-
 	local keep=$keep_limit
 
 	# test if number or period has a valid syntax
@@ -546,16 +525,13 @@ t2bs_rotate() {
 		keep=$1
 	fi
 
-	# prepare backup destination
-	prepare_destination || return 204
-
-	# free space mode
-	if $free_space ; then
-		free_space $free_size
-	else
-		# normal mode
-		rotate_backups $keep || return 205
+	# test backup destination
+	if ! prepare_destination &> /dev/null ; then
+		print_error "destination not ready"
+		return 204
 	fi
+
+	rotate_backups $keep || return 205
 }
 
 
