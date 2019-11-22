@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0 (2019-11-23)
+- Minor code improvements
+- Removed root security
+
 ## 1.0.0 RC 3 (2019-11-01)
 - Add install/uninstall scripts
 - Removed sudo mode
