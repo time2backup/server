@@ -4,7 +4,7 @@
 #  This file is part of time2backup server (https://github.com/time2backup/server)
 #
 #  MIT License
-#  Copyright (c) 2017-2019 Jean Prunneaux
+#  Copyright (c) 2017-2020 Jean Prunneaux
 #
 
 # Index
@@ -290,7 +290,7 @@ t2bs_backup() {
 
 		for b in "${history[@]}" ; do
 			# mirror mode: take the latest
-			if [ $keep_limit == 0 ] ; then
+			if [ $keep_limit = 0 ] ; then
 				resume_date=$b
 				break
 			fi
@@ -318,7 +318,7 @@ t2bs_backup() {
 		[ -n "$resume_date" ] && \
 		rmdir "$destination/$backup_date/$path_dest" && \
 		move_backup $resume_date $backup_date "$path_dest" &> /dev/null
-		if [ $? == 0 ] ; then
+		if [ $? = 0 ] ; then
 			# delete old infofile
 			clean_empty_backup -i $resume_date &> /dev/null
 		else
@@ -331,7 +331,7 @@ t2bs_backup() {
 		# if last backup defined, prepare versionning
 		if [ -n "$last_clean_backup" ] ; then
 			# if  mirror mode or no hard links, move destination
-			if [ $keep_limit == 0 ] || ! lb_istrue $hard_links ; then
+			if [ $keep_limit = 0 ] || ! lb_istrue $hard_links ; then
 
 				log_debug "move backup from $last_clean_backup to $backup_date for $path_dest"
 
@@ -498,7 +498,7 @@ t2bs_history() {
 	file_history=($(get_backup_history "${history_opts[@]}" "$*"))
 
 	# print backup versions
-	[ ${#file_history[@]} == 0 ] || echo ${file_history[*]}
+	[ ${#file_history[@]} = 0 ] || echo ${file_history[*]}
 }
 
 

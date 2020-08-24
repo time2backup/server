@@ -4,7 +4,7 @@
 #  This file is part of time2backup server (https://github.com/time2backup/server)
 #
 #  MIT License
-#  Copyright (c) 2017-2019 Jean Prunneaux
+#  Copyright (c) 2017-2020 Jean Prunneaux
 #
 
 # Index
@@ -36,7 +36,7 @@
 # Print an error to client
 # Usage: print_error [--log] TEXT
 print_error() {
-	if [ "$1" == "--log" ] ; then
+	if [ "$1" = "--log" ] ; then
 		shift
 		log_error "$*"
 	fi
@@ -187,7 +187,7 @@ srv_check_token() {
 		local session
 		session=$(grep -E "^[0-9]+	$1	" "$credentials")
 
-		if [ $? == 0 ] ; then
+		if [ $? = 0 ] ; then
 			log_info "Authentication by token successful for $lb_current_user $ssh_info"
 
 			# get saved infos in credentials
@@ -241,7 +241,7 @@ srv_clean_exit() {
 	# delete backup lock
 	release_lock &> /dev/null
 
-	if [ "$command" == backup ] ; then
+	if [ "$command" = backup ] ; then
 		clean_empty_backup -i $backup_date "$path_dest" &> /dev/null
 	fi
 

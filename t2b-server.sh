@@ -4,12 +4,12 @@
 #
 #  Website: https://github.com/time2backup/server
 #  MIT License
-#  Copyright (c) 2017-2019 Jean Prunneaux
+#  Copyright (c) 2017-2020 Jean Prunneaux
 #
-#  Version 1.0.0 (2019-11-23)
+#  Version 1.0.1 (2020-08-24)
 #
 
-declare -r version=1.0.0
+declare -r version=1.0.1
 
 
 #
@@ -17,7 +17,7 @@ declare -r version=1.0.0
 #
 
 # get real path of the script
-if [ "$(uname)" == Darwin ] ; then
+if [ "$(uname)" = Darwin ] ; then
 	# macOS which does not support readlink -f option
 	current_script=$(perl -e 'use Cwd "abs_path";print abs_path(shift)' "$0")
 else
@@ -147,7 +147,7 @@ while [ $# -gt 0 ] ; do
 done
 
 # get main command
-if [ $# == 0 ] ; then
+if [ $# = 0 ] ; then
 	usage_error "no main command"
 	exit 201
 fi
@@ -197,4 +197,3 @@ esac
 
 # run command
 t2bs_$command "$@"
-exit $?

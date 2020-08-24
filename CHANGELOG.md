@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1 (2020-08-24)
+- Upgrade libbash.sh to 1.17.1, improving import config security
+- Minor code improvements
+
 ## 1.0.0 (2019-11-23)
 - Minor code improvements
 - Removed root security
