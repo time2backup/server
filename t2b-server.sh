@@ -4,12 +4,12 @@
 #
 #  Website: https://github.com/time2backup/server
 #  MIT License
-#  Copyright (c) 2017-2020 Jean Prunneaux
+#  Copyright (c) 2017-2021 Jean Prunneaux
 #
-#  Version 1.0.1 (2020-08-24)
+#  Version 1.0.2 (2021-01-29)
 #
 
-declare -r version=1.0.1
+declare -r version=1.0.2
 
 
 #

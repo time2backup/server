@@ -4,7 +4,7 @@
 #  This file is part of time2backup server (https://github.com/time2backup/server)
 #
 #  MIT License
-#  Copyright (c) 2017-2020 Jean Prunneaux
+#  Copyright (c) 2017-2021 Jean Prunneaux
 #
 
 # Index

@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.2 (2021-01-29)
+- Upgrade libbash.sh to 1.18.1
+
 ## 1.0.1 (2020-08-24)
 - Upgrade libbash.sh to 1.17.1, improving import config security
 - Minor code improvements
