@@ -3,9 +3,14 @@
 #  time2backup server install script
 #
 #  MIT License
-#  Copyright (c) 2017-2019 Jean Prunneaux
+#  Copyright (c) 2017-2021 Jean Prunneaux
 #  Website: https://github.com/time2backup/server
 #
+
+if [ "$(whoami)" != root ] ; then
+	echo "You must be root to install time2backup server!"
+	exit 1
+fi
 
 # current directory
 curdir=$(dirname "$0")
@@ -14,11 +19,6 @@ curdir=$(dirname "$0")
 source "$curdir"/libbash/libbash.sh - &> /dev/null
 if [ $? != 0 ] ; then
 	echo >&2 "internal error"
-	exit 1
-fi
-
-if [ "$lb_current_user" != root ] ; then
-	lb_error "You must be root to install time2backup server"
 	exit 1
 fi
 

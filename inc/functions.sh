@@ -67,7 +67,8 @@
 #     prepare_rsync
 #     get_rsync_remote_command
 #     rsync_result
-#   Remote backups
+#   time2backup server
+#     server_run
 #     prepare_remote_destination
 #   Backup steps
 #     test_backup
@@ -78,7 +79,6 @@
 #     prepare_backup
 #     prepare_trash
 #     create_latest_link
-#     notify_backup_end
 #   Exit functions
 #     catch_kills
 #     uncatch_kills
@@ -728,7 +728,7 @@ rotate_backups() {
 	# remote destination
 	if lb_istrue $remote_destination ; then
 		debug "Rotate on remote server..."
-		"${t2bserver_cmd[@]}" rotate $1
+		server_run rotate $1
 		return
 	fi
 
@@ -870,7 +870,8 @@ prepare_destination() {
 			# don't popup in recurrent mode
 			lb_display_error "$tr_write_error_destination\n$tr_verify_access_rights"
 		else
-			lbg_error "$tr_write_error_destination\n$tr_verify_access_rights"
+			lbg_error "$tr_write_error_destination
+$tr_verify_access_rights"
 		fi
 		return 2
 	fi
@@ -1181,41 +1182,6 @@ upgrade_config() {
 		return 2
 	fi
 
-	# custom upgrade process
-
-	# version < 1.7.0 (including pre-releases)
-	if lb_compare_versions "$old_config_version" -le 1.7.0 ; then
-
-		# remove remote_sudo option
-		local old_remote_sudo=$(grep '^remote_sudo' "$config_file" | cut -d= -f2- | tr -d '[:space:]')
-		# if defined in the old config,
-		if [ -n "$old_remote_sudo" ] && [ "$old_remote_sudo" = true ] ; then
-			# if rsync remote path is defined,
-			local new_rsync_remote_path=$(lb_get_config "$new_config" rsync_remote_path)
-			if [ -n "$new_rsync_remote_path" ] ; then
-				# append 'sudo ' to existing remote path
-				[ "${new_rsync_remote_path:0:5}" != "sudo " ] && \
-					lb_set_config "$new_config" rsync_remote_path "sudo $new_rsync_remote_path"
-			else
-				lb_set_config "$new_config" rsync_remote_path "sudo rsync"
-			fi
-		fi
-
-		# migrate ssh options field
-		local old_ssh_options=$(grep '^ssh_options' "$config_file" | cut -d= -f2-)
-		# if defined and not migrated yet
-		if [ -n "$old_ssh_options" ] && ! echo "$old_ssh_options" | grep -Eq '^[[:space:]]*\(' ; then
-			# remove quotes, delete ssh command
-			old_ssh_options=$(echo "$old_ssh_options" | sed 's/^[[:space:]]*"[[:space:]]*//; s/[[:space:]]*"[[:space:]]*$//; s/ssh[[:space:]]*//')
-			# replace config with array syntax
-			lb_edit "s|^ssh_options.*|ssh_options = ($old_ssh_options)|" "$new_config"
-			if [ $? != 0 ] ; then
-				lb_display_error "$tr_error_upgrade_config"
-				return 2
-			fi
-		fi
-	fi
-
 	# install new config
 	# Note: we avoid to create new files every time
 	cat "$new_config" > "$config_file" && rm -f "$new_config"
@@ -1249,9 +1215,8 @@ load_config() {
 		return 1
 	fi
 
-	# analyse the default config template and load config
-	lb_read_config -a "$lb_current_script_directory"/config/time2backup.example.conf && \
-	lb_import_config "$config_file" "${lb_read_config[@]}"
+	# load config from template
+	lb_import_config -t "$lb_current_script_directory"/config/time2backup.example.conf "$config_file"
 	if [ $? != 0 ] ; then
 		lb_display_error "$tr_error_read_config"
 		return 1
@@ -1398,7 +1363,7 @@ crontab_config() {
 	# if root, use crontab -u option
 	# Note: macOS does supports -u option only if current user is root
 	if ! lb_ami_root && [ "$(id -u $user 2> /dev/null)" != 0 ] ; then
-		crontab_opts+=(-u $user)
+		crontab_opts+=(-u "$user")
 	fi
 
 	# check if crontab exists
@@ -1686,11 +1651,9 @@ find_infofile_section() {
 	# if file does not exists, quit
 	[ -f "$1" ] || return 2
 
-	local section path
-
 	# search in sections, ignoring global sections
+	local section path
 	for section in $(grep -Eo "^\[src.*\]" "$1" 2> /dev/null | tr -d '[]') ; do
-
 		# get path of the backup
 		path=$(lb_get_config -s "$section" "$1" path)
 
@@ -2014,7 +1977,6 @@ prepare_rsync() {
 	esac
 
 	# command-specific options
-
 	case $1 in
 		backup)
 			# delete newer files
@@ -2076,13 +2038,21 @@ rsync_result() {
 
 
 #
-#  Remote backups
+#  time2backup server
 #
+
+# Call time2backup server to run command
+# Usage: server_run ARGS
+# Dependencies: $t2bserver_cmd
+server_run() {
+	"${t2bserver_cmd[@]}" "$@"
+}
+
 
 # Prepare remote destination
 # Usage: prepare_remote_destination COMMAND [ARGS]
-# Dependencies: $t2bserver_cmd, $t2bserver_token, $logfile,
-#               $destination, $hard_links, $last_clean_backup
+# Dependencies: $t2bserver_token, $logfile, $destination
+#               $hard_links, $last_clean_backup
 prepare_remote_destination() {
 	local response code=0
 
@@ -2090,9 +2060,9 @@ prepare_remote_destination() {
 
 	# run distant command
 	if [ "$1" = backup ] ; then
-		response=$("${t2bserver_cmd[@]}" prepare "$@" 2> >(tee -a "$logfile" >&2))
+		response=$(server_run prepare "$@" 2> >(tee -a "$logfile" >&2))
 	else
-		response=$("${t2bserver_cmd[@]}" prepare "$@")
+		response=$(server_run prepare "$@")
 	fi
 
 	code=$?
@@ -2460,22 +2430,6 @@ create_latest_link() {
 }
 
 
-# Display notification at the end of the backup
-# Usage: notify_backup_end MESSAGE
-notify_backup_end() {
-	# notifications disabled: do nothing
-	lb_istrue $notifications || return 0
-
-	# Windows: display dialogs instead of notifications
-	if [ "$lb_current_os" = Windows ] ; then
-		# do not popup dialog that would prevent PC from shutdown
-		lb_istrue $shutdown || windows_ending_popup=$*
-	else
-		notify "$*"
-	fi
-}
-
-
 #
 #  Exit functions
 #
@@ -2546,9 +2500,6 @@ clean_exit() {
 
 		# if shutdown after backup, execute it
 		lb_istrue $shutdown && haltpc
-
-		# Windows end backup notification popup
-		[ ${#windows_ending_popup} -gt 0 ] && lbg_info "$windows_ending_popup"
 	fi
 
 	debug "Exited with code: $lb_exitcode"
@@ -2567,7 +2518,8 @@ cancel_exit() {
 	# display notification and exit
 	case $command in
 		backup)
-			notify "$(printf "$tr_backup_cancelled_at" "$(date +%H:%M:%S)")\n$(report_duration)"
+			notify "$(printf "$tr_backup_cancelled_at" "$(date +%H:%M:%S)")
+$(report_duration)"
 			clean_exit 17
 			;;
 		restore)
@@ -2689,7 +2641,6 @@ haltpc() {
 # Usage: choose_operation
 # Dependencies: $console_mode, $command, $tr_*
 choose_operation() {
-	# prepare options
 	local choices=("$tr_backup_files" "$tr_restore_file" "$tr_configure_time2backup")
 	local commands=("" backup restore config)
 
@@ -2737,23 +2688,13 @@ config_wizard() {
 
 		# if destination changed (or first run)
 		if [ "$chosen_directory" != "$destination" ] ; then
-
 			# update destination config
 			if lb_set_config "$config_file" destination "$chosen_directory" ; then
 				# reset destination variable
 				destination=$chosen_directory
 			else
-				lbg_error "$tr_error_set_destination\n$tr_edit_config_manually"
-			fi
-
-			# detect changed hostname
-			if [ -d "$destination/backups" ] ; then
-				existing_hostname=($(ls "$destination/backups"))
-				if [ ${#existing_hostname[@]} = 1 ] && [ "${existing_hostname[0]}" != "$lb_current_hostname" ] ; then
-					if lbg_yesno "$(printf "$tr_change_hostname\n$tr_change_hostname_no" ${existing_hostname[0]})" ; then
-						mv "$destination/backups/${existing_hostname[0]}" "$destination/backups/$lb_current_hostname"
-					fi
-				fi
+				lbg_error "$tr_error_set_destination
+$tr_edit_config_manually"
 			fi
 		fi
 
@@ -2789,8 +2730,9 @@ config_wizard() {
 		if lb_istrue $hard_links && lb_istrue $force_hard_links && ! test_hardlinks "$destination" ; then
 
 			# ask user to keep or not the force mode
-			if ! lbg_yesno "$tr_force_hard_links_confirm\n$tr_not_sure_say_no" ; then
-
+			lbg_yesno "$tr_force_hard_links_confirm
+$tr_not_sure_say_no"
+			if [ $? != 0 ] ; then
 				# set config
 				lb_set_config "$config_file" force_hard_links false || \
 					lb_warning "Cannot set config: force_hard_links"
@@ -2808,8 +2750,10 @@ config_wizard() {
 	fi
 
 	# edit sources to backup
-	if lbg_yesno "$tr_ask_edit_sources\n$tr_default_source" ; then
+	lbg_yesno "$tr_ask_edit_sources
+$tr_default_source"
 
+	if [ $? = 0 ] ; then
 		local advanced_mode=false
 		lb_istrue $console_mode && advanced_mode=true
 
@@ -2853,84 +2797,80 @@ config_wizard() {
 	fi
 
 	# activate recurrent backups
-	if lb_istrue $enable_recurrent ; then
-		if lbg_yesno "$tr_ask_activate_recurrent" ; then
+	if lb_istrue $enable_recurrent && lbg_yesno "$tr_ask_activate_recurrent" ; then
+		# default custom frequency
+		case $frequency in
+			hourly|1h|60m)
+				default_frequency=1
+				;;
+			""|daily|1d|24h)
+				default_frequency=2
+				;;
+			weekly|7d)
+				default_frequency=3
+				;;
+			monthly|30d)
+				default_frequency=4
+				;;
+			*)
+				default_frequency=5
+				;;
+		esac
 
-			# default custom frequency
-			case $frequency in
-				hourly|1h|60m)
-					default_frequency=1
+		# choose frequency
+		if lbg_choose_option -l "$tr_choose_backup_frequency" -d $default_frequency "$tr_frequency_hourly" "$tr_frequency_daily" "$tr_frequency_weekly" "$tr_frequency_monthly" "$tr_frequency_custom"; then
+			recurrent_enabled=true
+
+			# set recurrence frequency
+			case $lbg_choose_option in
+				1)
+					lb_set_config "$config_file" frequency hourly
 					;;
-				""|daily|1d|24h)
-					default_frequency=2
+				2)
+					lb_set_config "$config_file" frequency daily
 					;;
-				weekly|7d)
-					default_frequency=3
+				3)
+					lb_set_config "$config_file" frequency weekly
 					;;
-				monthly|30d)
-					default_frequency=4
+				4)
+					lb_set_config "$config_file" frequency monthly
 					;;
-				*)
-					default_frequency=5
+				5)
+					# default custom frequency
+					case $frequency in
+						hourly)
+							frequency=1h
+							;;
+						weekly)
+							frequency=7d
+							;;
+						monthly)
+							frequency=31d
+							;;
+						'')
+							# default is 24h
+							frequency=24h
+							;;
+					esac
+
+					# display dialog to enter custom frequency
+					if lbg_input_text -d "$frequency" "$tr_enter_frequency $tr_frequency_examples" ; then
+						if test_period $lbg_input_text ; then
+							lb_set_config "$config_file" frequency $lbg_input_text
+						else
+							lbg_error "$tr_frequency_syntax_error
+$tr_please_retry"
+						fi
+					fi
 					;;
 			esac
 
-			# choose frequency
-			if lbg_choose_option -l "$tr_choose_backup_frequency" -d $default_frequency "$tr_frequency_hourly" "$tr_frequency_daily" "$tr_frequency_weekly" "$tr_frequency_monthly" "$tr_frequency_custom"; then
-
-				recurrent_enabled=true
-
-				# set recurrence frequency
-				case $lbg_choose_option in
-					1)
-						lb_set_config "$config_file" frequency hourly
-						;;
-					2)
-						lb_set_config "$config_file" frequency daily
-						;;
-					3)
-						lb_set_config "$config_file" frequency weekly
-						;;
-					4)
-						lb_set_config "$config_file" frequency monthly
-						;;
-					5)
-						# default custom frequency
-						case $frequency in
-							hourly)
-								frequency=1h
-								;;
-							weekly)
-								frequency=7d
-								;;
-							monthly)
-								frequency=31d
-								;;
-							'')
-								# default is 24h
-								frequency=24h
-								;;
-						esac
-
-						# display dialog to enter custom frequency
-						if lbg_input_text -d "$frequency" "$tr_enter_frequency $tr_frequency_examples" ; then
-							if test_period $lbg_input_text ; then
-								lb_set_config "$config_file" frequency $lbg_input_text
-							else
-								lbg_error "$tr_frequency_syntax_error\n$tr_please_retry"
-							fi
-						fi
-						;;
-				esac
-
-				[ $? != 0 ] && lb_warning "Cannot set config: frequency"
-			fi
+			[ $? != 0 ] && lb_warning "Cannot set config: frequency"
 		fi
 	fi
 
 	# ask to edit config
 	if lbg_yesno "$tr_ask_edit_config" ; then
-
 		if open_config "$config_file" && [ "$lb_current_os" != Windows ] ; then
 			# display window to wait until user has finished
 			lb_istrue $console_mode || lbg_info "$tr_finished_edit"
