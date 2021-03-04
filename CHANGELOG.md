@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.3 (2021-03-04)
+- Minor code improvements
+- Upgrade libbash.sh to 1.20.0
+
 ## 1.0.2 (2021-01-29)
 - Upgrade libbash.sh to 1.18.1
 
@@ -37,6 +41,6 @@
 time2backup server is licensed under the MIT License. See [LICENSE.md](LICENSE.md) for the full license text.
 
 ## Credits
-Author: Jean Prunneaux  [http://jean.prunneaux.com](http://jean.prunneaux.com)
+Author: Jean Prunneaux  https://jean.prunneaux.com
 
-Website: [https://github.com/time2backup/server](https://github.com/time2backup/server)
+Website: https://github.com/time2backup/server
